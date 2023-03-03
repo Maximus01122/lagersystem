@@ -14,12 +14,10 @@ public interface MaterialRepository extends JpaRepository<Material,Integer> {
     Optional<Material> findByName(String name);
     List<Material> findByAnzahl(int anzahl);
 
-    @Query("select distinct m.kategorie from Material m")
+    @Query("select k from Kategorie k")
     List<Kategorie> getAllKategorien();
 
-    @Query("select m from Material m where m.kategorie = ?1")
+    @Query("select m from Material m where m.kategorie.name = ?1")
     List<Material> getByKategorie(String kategorie);
-
-
 }
 

@@ -65,6 +65,7 @@ public class KundenController {
 
     @GetMapping("/getByName/{name}")
     public List<Kunde> getKundeByName(@PathVariable String name) {
+        System.out.println(kundenService.getKundeByName(name));
         return kundenService.getKundeByName(name);
     }
 

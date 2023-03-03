@@ -57,34 +57,30 @@ public class BuchungController {
                 new IllegalArgumentException("Buchung mit passender ID: "+ id + " nicht gefunden"));
     }
 
-    @PostMapping("createRechnung/{id}")
-    public void createRechnung(@PathVariable int id,@RequestBody RechnungInfos rechnungInfos) {
-        Buchung b = getBuchung(id);
+    private TreeMap<BuchungMaterial, Double> getPreise (int id,MietAnzahlBody rechnungInfos){
         List<BuchungMaterial> list = getMaterialienByBuchung_Id(id);
         TreeMap<BuchungMaterial, Double> bestellung = new TreeMap<>();
         for (BuchungMaterial m : list) {
-            double preis = rechnungInfos.getAnzahlWochendmiete() * m.getMaterial().getWochenendMiete();
+            double preis = rechnungInfos.getAnzahlWochenendmiete() * m.getMaterial().getWochenendMiete();
             preis+= rechnungInfos.getAnzahlTagesmiete()*m.getMaterial().getTagesMiete();
             preis*=m.getAnzahl();
             bestellung.put(m,preis);
         }
+        return bestellung;
+    }
+    @PostMapping("createRechnung/{id}")
+    public void createRechnung(@PathVariable int id,@RequestBody RechnungInfos rechnungInfos) {
+        Buchung b = getBuchung(id);
+        TreeMap<BuchungMaterial, Double> bestellung = getPreise(id,rechnungInfos);
         CreatePDF.createPDF(b.getKunde(), bestellung, rechnungInfos);
     }
 
     @PostMapping("createAngebot/{id}")
     public void createAngebot(@PathVariable int id,@RequestBody AngebotInfos angebotInfos) {
         Buchung b = getBuchung(id);
-        List<BuchungMaterial> list = getMaterialienByBuchung_Id(id);
-        TreeMap<BuchungMaterial, Double> bestellung = new TreeMap<>();
-        for (BuchungMaterial m : list) {
-            double preis = angebotInfos.getAnzahlWochendmiete() * m.getMaterial().getWochenendMiete();
-            preis+= angebotInfos.getAnzahlTagesmiete()*m.getMaterial().getTagesMiete();
-            preis*=m.getAnzahl();
-            bestellung.put(m,preis);
-        }
+        TreeMap<BuchungMaterial, Double> bestellung = getPreise(id,angebotInfos);
         CreatePDF.createPDF(b.getKunde(), bestellung, angebotInfos);
     }
-
 
     @GetMapping("/getAll")
     public List<Buchung> getAll(){
@@ -109,12 +105,12 @@ public class BuchungController {
     }
 
     @GetMapping("getPreis/{id}")
-    public double getPreis(@PathVariable int id, @RequestBody Mietdauer mietdauer){
-        getBuchung(id);
-        List<BuchungMaterial> bestellung = getMaterialienByBuchung_Id(id);
-        List<AufbauService> aufbauService = getAufbauService(id);
+    public double getPreis(@PathVariable int buchungsId, @RequestBody Mietdauer mietdauer){
+        getBuchung(buchungsId);
+        List<BuchungMaterial> bestellung = getMaterialienByBuchung_Id(buchungsId);
+        List<AufbauService> aufbauService = getAufbauService(buchungsId);
         List<String> aufbauServices =aufbauService.stream().map(AufbauService::getName).toList();
-        double ladung = getLadepauschale(id).getPreis();
+        double ladung = getLadepauschale(buchungsId).getPreis();
         int tage = mietdauer.getTage();
         int wochende = mietdauer.getWochenende();
         double preis = 0;

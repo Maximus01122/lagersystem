@@ -13,8 +13,8 @@ public class Buchung {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
+    @ManyToOne
     @OnDelete(action = OnDeleteAction.CASCADE)
-    @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "teilnehmer_id", nullable = false)
     private Kunde kunde;
 
@@ -99,7 +99,7 @@ public class Buchung {
         if (o == null || getClass() != o.getClass()) return false;
         Buchung buchung = (Buchung) o;
         return id == buchung.id && angebotAkzeptiert == buchung.angebotAkzeptiert
-                && Objects.equals(kunde, buchung.kunde)
+                && kunde.equals(buchung.kunde)
                 && Objects.equals(startdatum, buchung.startdatum)
                 && Objects.equals(enddatum, buchung.enddatum)
                 && Objects.equals(angebotVon, buchung.angebotVon);

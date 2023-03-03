@@ -78,6 +78,7 @@ public class BuchungMaterialController {
                 }
             }
         }
+        else System.out.println("leere Bestellung zum Testen");
         return true;
     }
 
@@ -130,17 +131,11 @@ public class BuchungMaterialController {
         if(b.size() != 1)
             throw new IllegalArgumentException("Die Buchungsmaterialien haben nicht alle die gleiche Buchung!");
 
-        List<PlatzMaterial> platzMaterialList = bestellung.stream().map(bm -> new PlatzMaterial(bm.getAnzahl(), bm.getMaterial())).toList();
-        LocalDate s = b.stream().toList().get(0).getStartdatum();
-        LocalDate e = b.stream().toList().get(0).getEnddatum();
         List<BuchungMaterial> bmList = new ArrayList<>();
-
-        if (isValidBestellung(new HolderDatumMaterial(s, e, platzMaterialList))) {
-            for (BuchungMaterial bm : bestellung) {
-                buchungController.getBuchung(bm.getBuchung().getId());
-                BuchungMaterial savedBM =buchungMaterialService.saveBuchungMaterial(bm);
-                bmList.add(savedBM);
-            }
+        for (BuchungMaterial bm : bestellung) {
+            buchungController.getBuchung(bm.getBuchung().getId());
+            BuchungMaterial savedBM =buchungMaterialService.saveBuchungMaterial(bm);
+            bmList.add(savedBM);
         }
         return bmList;
     }

@@ -4,14 +4,13 @@ import java.util.Objects;
 
 @Entity
 public class Kunde {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
     @Column(length = 60)
     private String email;
-    @Column
+    @Column(unique = true)
     private String name;
 
     @Column(nullable = false)
@@ -117,7 +116,11 @@ public class Kunde {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Kunde kunde = (Kunde) o;
-        return id == kunde.id && kundennummer == kunde.kundennummer && Objects.equals(email, kunde.email) && Objects.equals(name, kunde.name) && Objects.equals(telefonnummer, kunde.telefonnummer) && Objects.equals(adresse, kunde.adresse);
+        return id == kunde.id && kundennummer == kunde.kundennummer
+                && Objects.equals(email, kunde.email)
+                && Objects.equals(name, kunde.name)
+                && Objects.equals(telefonnummer, kunde.telefonnummer)
+                && Objects.equals(adresse, kunde.adresse);
     }
 
     @Override

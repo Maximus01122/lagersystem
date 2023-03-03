@@ -27,14 +27,8 @@ public class CreatePDF {
     private static final Font base;
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.00");
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
-
-
-
     private static final int MAX_ROWS_PER_TABLE = 24;
-
     private static final int beginLeft = 35;
-
-
 
     static {
         try {
@@ -55,8 +49,6 @@ public class CreatePDF {
             footer(writer);
             fillTable(document, materialPreisListe);
             document.close();
-            document.close();
-
         } catch (FileNotFoundException | DocumentException ignored) {
         }
     }
@@ -66,13 +58,10 @@ public class CreatePDF {
         try {
             PdfWriter writer = PdfWriter.getInstance(document, new FileOutputStream(PDF + kunde.getName() + ".pdf"));
             document.open();
-
             headerRechnung(writer, kunde, rechnungInfos);
             footer(writer);
             fillTable(document,materialPreisListe);
             document.close();
-            document.close();
-
         } catch (FileNotFoundException | DocumentException ignored) {
         }
     }
@@ -105,13 +94,14 @@ public class CreatePDF {
 
     private static void fillTable(Document document, Map<BuchungMaterial, Double> materialPreisListe) throws DocumentException {
         List<BuchungMaterial> bList = materialPreisListe.keySet().stream().toList();
-
+        boolean space = true;
         PdfPTable t = newTable();
 
         double summe = 0;
         for (int i = 0; i < bList.size(); i++) {
             if (i%MAX_ROWS_PER_TABLE==0 && i!=0){
-                addTableToDocument(document,t);
+                addTableToDocument(document,t,space);
+                space = false;
                 document.newPage();
                 t = newTable();
             }
@@ -123,7 +113,6 @@ public class CreatePDF {
         }
 
         addRows(t,"Mehrwertsteuer","",preisToString(summe*0.19));
-
         summe*=1.19;
 
         //leere Zeile int Tabelle einfügen
@@ -140,8 +129,7 @@ public class CreatePDF {
         p.setPhrase(new Phrase(preisToString(summe), base));
         p.setHorizontalAlignment(2);
         t.addCell(p);
-
-        addTableToDocument(document,t);
+        addTableToDocument(document,t,space);
     }
 
     private static void addRows(PdfPTable table, String name, String anzahl, String preis) {
@@ -251,10 +239,11 @@ public class CreatePDF {
         return t;
     }
 
-    private static void addTableToDocument(Document document, PdfPTable t) throws DocumentException {
-        for (int j = 0; j < 12; j++) {
-            document.add(new Paragraph(" "));
-        }
+    private static void addTableToDocument(Document document, PdfPTable t, boolean space) throws DocumentException {
+        if (space)
+            for (int j = 0; j < 12; j++) {
+                document.add(new Paragraph(" "));
+            }
         document.add(t);
     }
 }

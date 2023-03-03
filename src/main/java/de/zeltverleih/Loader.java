@@ -27,6 +27,9 @@ class Loader {
 
     @Autowired
     BuchungServiceImpl buchungService;
+
+    @Autowired
+    KundenServiceImpl kundenService;
     @Autowired
     MaterialServiceImpl materialService;
 
@@ -45,6 +48,9 @@ class Loader {
                     "src/main/resources/Terminübersicht 2022.xlsx");
             bList.forEach(pair ->
             {
+                Kunde k = pair.getFirst().getKunde();
+                k.setAdresse(new Adresse("","","",""));
+                kundenService.saveKunde(k);
                 Buchung b = buchungService.saveBuchung(pair.getFirst());
                 List<PlatzMaterial> pmList = pair.getSecond();
                 for (PlatzMaterial platzmaterial:
@@ -74,6 +80,6 @@ class Loader {
                 System.out.println(k.getName());
                 kategorieService.saveKategorie(k);
             }
-        };*/null;
+        }*/null;
     }
 }

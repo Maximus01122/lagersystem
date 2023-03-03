@@ -2,13 +2,13 @@ package de.zeltverleih.model;
 
 public class MietAnzahlBody {
     private int anzahlTagesmiete;
-    private int anzahlWochendmiete;
+    private int anzahlWochenendmiete;
 
     private int lieferung;
 
     public MietAnzahlBody(int anzahlTagesmiete, int anzahlWochendmiete, int lieferung) {
         this.anzahlTagesmiete = anzahlTagesmiete;
-        this.anzahlWochendmiete = anzahlWochendmiete;
+        this.anzahlWochenendmiete = anzahlWochendmiete;
         this.lieferung = lieferung;
     }
 
@@ -28,11 +28,11 @@ public class MietAnzahlBody {
         this.anzahlTagesmiete = anzahlTagesmiete;
     }
 
-    public int getAnzahlWochendmiete() {
-        return anzahlWochendmiete;
+    public int getAnzahlWochenendmiete() {
+        return anzahlWochenendmiete;
     }
 
-    public void setAnzahlWochendmiete(int anzahlWochendmiete) {
-        this.anzahlWochendmiete = anzahlWochendmiete;
+    public void setAnzahlWochenendmiete(int anzahlWochenendmiete) {
+        this.anzahlWochenendmiete = anzahlWochenendmiete;
     }
 }

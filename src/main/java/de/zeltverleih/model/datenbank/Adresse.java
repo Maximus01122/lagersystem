@@ -1,6 +1,7 @@
 package de.zeltverleih.model.datenbank;
 
 import javax.persistence.*;
+import java.util.Objects;
 
 @Entity
 public class Adresse {
@@ -83,9 +84,7 @@ public class Adresse {
                 throw new IllegalArgumentException("Ort darf keine Ziffern enthalten");
             }
         }
-
         this.ort = ort;
-
     }
 
     public String getHausnummer() {
@@ -116,4 +115,20 @@ public class Adresse {
         setPlz(getPlz());
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Adresse adresse = (Adresse) o;
+        return id == adresse.id
+                && Objects.equals(plz, adresse.plz)
+                && Objects.equals(strasse, adresse.strasse)
+                && Objects.equals(ort, adresse.ort)
+                && Objects.equals(hausnummer, adresse.hausnummer);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, plz, strasse, ort, hausnummer);
+    }
 }
