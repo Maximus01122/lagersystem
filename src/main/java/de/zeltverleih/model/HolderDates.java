@@ -3,29 +3,29 @@ import java.time.LocalDate;
 import java.util.Objects;
 
 public class HolderDates {
-    private LocalDate startdatum;
-    private LocalDate enddatum;
+    private LocalDate startDate;
+    private LocalDate endDate;
 
-    public HolderDates(LocalDate startdatum, LocalDate enddatum) {
-        this.startdatum = Objects.requireNonNull(startdatum,"Startdatum darf nicht null sein");;
-        this.enddatum = Objects.requireNonNull(enddatum,"Enddatum darf nicht null sein");;
+    public HolderDates(LocalDate startDate, LocalDate endDate) {
+        this.startDate = Objects.requireNonNull(startDate,"Startdatum darf nicht null sein");;
+        this.endDate = Objects.requireNonNull(endDate,"Enddatum darf nicht null sein");;
     }
 
     public HolderDates(){}
 
-    public LocalDate getStartdatum() {
-        return startdatum;
+    public LocalDate getStartDate() {
+        return startDate;
     }
 
-    public void setStartdatum(LocalDate startdatum) {
-        this.startdatum = Objects.requireNonNull(startdatum,"Startdatum darf nicht null sein");;
+    public void setStartDate(LocalDate startDate) {
+        this.startDate = Objects.requireNonNull(startDate,"Startdatum darf nicht null sein");
     }
 
-    public LocalDate getEnddatum() {
-        return enddatum;
+    public LocalDate getEndDate() {
+        return endDate;
     }
 
-    public void setEnddatum(LocalDate enddatum) {
-        this.enddatum = Objects.requireNonNull(enddatum,"Enddatum darf nicht null sein");
+    public void setEndDate(LocalDate endDate) {
+        this.endDate = Objects.requireNonNull(endDate,"Enddatum darf nicht null sein");
     }
 }

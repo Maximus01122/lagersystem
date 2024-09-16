@@ -3,12 +3,11 @@ package de.zeltverleih.service;
 
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.*;
-
-
-import de.zeltverleih.model.AngebotInfos;
-import de.zeltverleih.model.RechnungInfos;
-import de.zeltverleih.model.datenbank.BuchungMaterial;
-import de.zeltverleih.model.datenbank.Kunde;
+import de.zeltverleih.model.InvoiceDetails;
+import de.zeltverleih.model.datenbank.BookingMaterial;
+import de.zeltverleih.model.datenbank.Client;
+import de.zeltverleih.model.datenbank.CostDetails;
+import de.zeltverleih.model.datenbank.DateDetails;
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -20,15 +19,18 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 public class CreatePDF {
-    private static final String PDF = "/Users/maximilianfuchs/Documents/";
+    private static final String ANGEBOTSORDNER = "/Users/maximilianfuchs/Documents/Angebot/";
+    private static final String RECHNUNGSORDNER = "/Users/maximilianfuchs/Documents/Rechnung/";
 
     private static final BaseFont regular;
     private static final BaseFont bold;
     private static final Font base;
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.00");
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
-    private static final int MAX_ROWS_PER_TABLE = 24;
+    private static final int MAX_ROWS_PER_TABLE = 20;
     private static final int beginLeft = 35;
+
+    private PdfWriter writer;
 
     static {
         try {
@@ -40,27 +42,37 @@ public class CreatePDF {
         }
     }
 
-    public static void createPDF(Kunde kunde, Map<BuchungMaterial, Double> materialPreisListe, AngebotInfos angebotInfos) {
+    public void createPDF(Client client, Map<BookingMaterial, Double> materialPreisListe,
+                          Map<String, Double> servicePreisListe,
+                          DateDetails dates,
+                          CostDetails costDetails) {
         Document document = new Document();
         try {
-            PdfWriter writer = PdfWriter.getInstance(document, new FileOutputStream(PDF + kunde.getName() + ".pdf"));
+            PdfWriter writer = PdfWriter.getInstance(document, new FileOutputStream(ANGEBOTSORDNER + client.getName() + ".pdf"));
+            this.writer = writer;
             document.open();
-            headerAngebot(writer, kunde, angebotInfos);
+            headerAngebot(writer, client, dates);
+            addDeliveryToService(servicePreisListe, costDetails);
+            fillTable(document, materialPreisListe, servicePreisListe);
             footer(writer);
-            fillTable(document, materialPreisListe);
             document.close();
         } catch (FileNotFoundException | DocumentException ignored) {
         }
     }
 
-    public static void createPDF(Kunde kunde, Map<BuchungMaterial, Double> materialPreisListe, RechnungInfos rechnungInfos) {
+    public void createPDF(Client client, Map<BookingMaterial, Double> materialPreisListe,
+                          Map<String, Double> servicePreisListe, InvoiceDetails costDetails) {
         Document document = new Document();
         try {
-            PdfWriter writer = PdfWriter.getInstance(document, new FileOutputStream(PDF + kunde.getName() + ".pdf"));
+            PdfWriter writer = PdfWriter.getInstance(document, new FileOutputStream(RECHNUNGSORDNER  + client.getName() + ".pdf"));
+            this.writer = writer;
             document.open();
-            headerRechnung(writer, kunde, rechnungInfos);
+            headerRechnung(writer, client, costDetails);
+            addDeliveryToService(servicePreisListe,costDetails);
+            fillTable(document,materialPreisListe,servicePreisListe);
             footer(writer);
-            fillTable(document,materialPreisListe);
+            document.add(new Paragraph(" "));
+            document.add(new Paragraph("Bitte begleichen sie den angegebenen Betrag bis zum " + DATE_TIME_FORMATTER.format(costDetails.getPaymentDate())));
             document.close();
         } catch (FileNotFoundException | DocumentException ignored) {
         }
@@ -68,7 +80,7 @@ public class CreatePDF {
 
     private static String preisToString(double preis){
         String doubleAsString = DECIMAL_FORMAT.format(preis);
-        return doubleAsString.replace(".",",") + "€";
+        return doubleAsString.replace(".",",") + " €";
     }
 
     private static void addTableHeader(PdfPTable table) {
@@ -84,6 +96,7 @@ public class CreatePDF {
     }
 
     private static PdfPCell createPdfCell(String text) {
+        text = text.trim();
         PdfPCell cell = new PdfPCell();
         cell.setBorderWidth(1);
         cell.setPhrase(new Phrase(text));
@@ -92,27 +105,51 @@ public class CreatePDF {
         return cell;
     }
 
-    private static void fillTable(Document document, Map<BuchungMaterial, Double> materialPreisListe) throws DocumentException {
-        List<BuchungMaterial> bList = materialPreisListe.keySet().stream().toList();
+    private void fillTable(Document document, Map<BookingMaterial, Double> materialPreisListe,
+                                  Map<String, Double> servicePreisListe) throws DocumentException {
+        List<BookingMaterial> bList = materialPreisListe.keySet().stream().toList();
+        List<String> serviceLeistungen = servicePreisListe.keySet().stream().toList();
         boolean space = true;
         PdfPTable t = newTable();
 
         double summe = 0;
+        int rownumber=0;
+        int checkNewPage=0;
         for (int i = 0; i < bList.size(); i++) {
-            if (i%MAX_ROWS_PER_TABLE==0 && i!=0){
+            if (rownumber%((checkNewPage+1)*MAX_ROWS_PER_TABLE)==0 && rownumber!=0){
                 addTableToDocument(document,t,space);
                 space = false;
+                footer(this.writer);
                 document.newPage();
+                checkNewPage=2;
                 t = newTable();
             }
-            BuchungMaterial bm = bList.get(i);
+            BookingMaterial bm = bList.get(i);
             summe+= materialPreisListe.get(bm);
-            String anzahl = String.valueOf(bm.getAnzahl());
+            String anzahl = String.valueOf(bm.getQuantity());
             String preis = preisToString(materialPreisListe.get(bm));
             addRows(t, bList.get(i).getMaterial().getName(), anzahl, preis);
+            rownumber++;
         }
 
-        addRows(t,"Mehrwertsteuer","",preisToString(summe*0.19));
+        for (int i = 0; i < serviceLeistungen.size(); i++) {
+            if (rownumber%((checkNewPage+1)*MAX_ROWS_PER_TABLE)==0 && rownumber!=0){
+                addTableToDocument(document,t,space);
+                space = false;
+                footer(this.writer);
+                document.newPage();
+                checkNewPage=2;
+                t = newTable();
+            }
+            String serviceName = serviceLeistungen.get(i);
+            summe+= servicePreisListe.get(serviceName);
+            String preis = preisToString(servicePreisListe.get(serviceName));
+            addRows(t, serviceName, "", preis);
+            rownumber++;
+        }
+
+
+        addRows(t,"Mehrwertsteuer","19%",preisToString(summe*0.19));
         summe*=1.19;
 
         //leere Zeile int Tabelle einfügen
@@ -151,7 +188,7 @@ public class CreatePDF {
         cb.restoreState();
     }
 
-    private static void FirmenInfos(PdfWriter writer, Kunde kunde){
+    private static void CompanyAndClientInfos(PdfWriter writer, Client client){
         int startFirmaAdresse = 788;
         FixText("Zeltverleih Erfurt - Ludwig Fuchs", beginLeft, startFirmaAdresse, writer, 8, regular);
         FixText("__________________________", beginLeft, startFirmaAdresse, writer, 8, regular);
@@ -170,34 +207,41 @@ public class CreatePDF {
         FixText("Internet: www.zeltverleiherfurt.de", 385.5F, startKontaktInfo - 24, writer, 12, regular);
 
         int startAdresse = startFirmaAdresse - 32;
-        FixText(kunde.getName(), beginLeft, startAdresse, writer, 12, regular);
-        FixText(kunde.getAdresse().getStrasse()+ " " + kunde.getAdresse().getHausnummer(), beginLeft, startAdresse - 10, writer, 12, regular);
-        FixText(kunde.getAdresse().getOrt(), beginLeft, startAdresse - 20, writer, 12, regular);
+        FixText(client.getName(), beginLeft, startAdresse, writer, 12, regular);
+        FixText(client.getAddress().getStreet() + " " + client.getAddress().getHouseNumber(), beginLeft, startAdresse - 15, writer, 12, regular);
+        FixText(client.getAddress().getPostalCode() + " " + client.getAddress().getCity(), beginLeft, startAdresse - 30, writer, 12, regular);
     }
 
-    private static void headerAngebot(PdfWriter writer, Kunde kunde, AngebotInfos angebotInfos) {
-        FirmenInfos(writer,kunde);
-        int startKontaktInfo = 722;
-        FixText("gültig bis: " + angebotInfos.getGueltigBis().format(DATE_TIME_FORMATTER), 448F, startKontaktInfo - 66, writer, 12, regular);
-        FixText("Kundennummer: " + "1234", 443, startKontaktInfo - 90, writer, 12, regular);
-
-        int startRechnungGross = startKontaktInfo - 80;
-        FixText("Angebot vom " + " bis ", beginLeft, startRechnungGross, writer, 24, bold);
+    private static void headerAngebot(PdfWriter writer, Client client, DateDetails dates) {
+        CompanyAndClientInfos(writer, client);
+        int startRechnungGross = 642;
+        FixText("Angebot vom " + DATE_TIME_FORMATTER.format(dates.getStartDate()) +
+                        " bis " + DATE_TIME_FORMATTER.format(dates.getEndDate()),
+                beginLeft, startRechnungGross, writer, 20, bold);
+        FixText("gültig bis: " + dates.getValidUntil().format(DATE_TIME_FORMATTER),
+                beginLeft, startRechnungGross - 20, writer, 10, bold);
         FixText("_______________________________________________________________________________",
-                beginLeft, startRechnungGross - 40, writer, 12, regular);    }
-    private static void headerRechnung(PdfWriter writer, Kunde kunde, RechnungInfos rechnungInfos){
-        FirmenInfos(writer,kunde);
+                beginLeft, startRechnungGross - 40, writer, 12, regular);
+    }
+
+    private static void headerRechnung(PdfWriter writer, Client client, InvoiceDetails rechnungInfos){
+        CompanyAndClientInfos(writer, client);
         int startKontaktInfo = 722;
-        FixText("Rechnungsdatum: " + rechnungInfos.getRechnungsdatum().format(DATE_TIME_FORMATTER), 400.5F, startKontaktInfo - 66, writer, 12, regular);
-        FixText("Leistungsdatum: " + rechnungInfos.getBegleichsdatum().format(DATE_TIME_FORMATTER), 410, startKontaktInfo - 78, writer, 12, regular);
-        FixText("Kundennummer: " + "1234", 443, startKontaktInfo - 90, writer, 12, regular);
+        FixText("Rechnungsdatum: " + rechnungInfos.getInvoiceDate().format(DATE_TIME_FORMATTER), 400.5F, startKontaktInfo - 66, writer, 12, regular);
+        FixText("Leistungsdatum: " + rechnungInfos.getPaymentDate().format(DATE_TIME_FORMATTER), 410, startKontaktInfo - 78, writer, 12, regular);
+        FixText("ClientNumber: " + client.getCustomerNumber(), 443, startKontaktInfo - 90, writer, 12, regular);
 
         int startRechnungGross = startKontaktInfo - 80;
         FixText("Rechnung", beginLeft, startRechnungGross, writer, 24, bold);
-        FixText("Rechnung Nr.: " + "2022-12-08", beginLeft, startRechnungGross - 20, writer, 12, bold);
+        FixText("Rechnung Nr.: " + rechnungInfos.invoiceString(), beginLeft, startRechnungGross - 20, writer, 12, bold);
         FixText("Bitte bei Zahlungen und Schriftverkehr angeben!", beginLeft, startRechnungGross - 30, writer, 8, regular);
         FixText("_______________________________________________________________________________",
                 beginLeft, startRechnungGross - 40, writer, 12, regular);
+    }
+
+    private static void addDeliveryToService(Map<String, Double> servicePreisListe, CostDetails costDetails){
+        if (costDetails.getDeliveryCosts()>0)
+            servicePreisListe.put("Lieferung", (double) costDetails.getDeliveryCosts());
     }
 
     private static void footer(PdfWriter writer){
@@ -210,25 +254,19 @@ public class CreatePDF {
         FixText("99098 Erfurt", beginLeft, startunten - 40, writer, 8, regular);
 
         int beginMiddleLeft = 150;
-        FixText("Fidor Bank", beginLeft + beginMiddleLeft, startunten - 10, writer, 8, regular);
-        FixText("BLZ: 700 222 00", beginLeft + beginMiddleLeft, startunten - 20, writer, 8, regular);
-        FixText("KTO: 0020232508", beginLeft + beginMiddleLeft, startunten - 30, writer, 8, regular);
+        FixText("FYRST BASE", beginLeft + beginMiddleLeft, startunten - 10, writer, 8, regular);
+        FixText("BLZ: 100 100 10", beginLeft + beginMiddleLeft, startunten - 20, writer, 8, regular);
+        FixText("alt KTO: 0020232508", beginLeft + beginMiddleLeft, startunten - 30, writer, 8, regular);
         FixText("KTO Inh.: Zeitverleih Erfurt", beginLeft + beginMiddleLeft, startunten - 40, writer, 8, regular);
 
 
         int beginMiddleRight = beginMiddleLeft + 150;
-        FixText("IBAN: DE25700222000020233508", beginLeft + beginMiddleRight, startunten - 10, writer, 8, regular);
-        FixText("BIC: FDDODEMMXXX", beginLeft + beginMiddleRight, startunten - 20, writer, 8, regular);
+        FixText("IBAN: DE03 1001 0010 0068 2481 46", beginLeft + beginMiddleRight, startunten - 10, writer, 8, regular);
+        FixText("BIC: PBNKDEFF", beginLeft + beginMiddleRight, startunten - 20, writer, 8, regular);
 
         FixText("USt-IdNr. ", 510, startunten - 10, writer, 8, regular);
         FixText("DE356901873", 510, startunten - 20, writer, 8, regular);
     }
-
-
-
-
-
-
 
 
     private static PdfPTable newTable(){

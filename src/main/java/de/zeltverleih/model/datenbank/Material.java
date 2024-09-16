@@ -1,60 +1,36 @@
 package de.zeltverleih.model.datenbank;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import javax.persistence.*;
+import java.util.List;
 
 @Entity
 public class Material {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
-    @Column(name = "name", nullable = false, length = 60, unique = true)
+    private Long id;
+
+    @Column(unique = true, nullable = false)
     private String name;
-    @Column
-    int anzahl;
+    private int count;
 
-    @Column
-    double tagesMiete;
-    @Column
-    double wochenendMiete;
-    @Column
-    double aufbau;
+    @OneToMany(mappedBy = "material", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private List<MaterialPrice> materialPrices;
 
-    @ManyToOne
-    Kategorie kategorie;
+    @Enumerated(EnumType.STRING)
+    private MaterialCategory category;
 
-    public Material() {
-    }
+    // Getters and Setters
 
-
-    public Material(String name, int anzahl) {
-        this.name = name;
-        this.anzahl = anzahl;
-    }
-
-    public Material(String name, int anzahl, double tagesMiete, double wochenendMiete, double aufbau) {
-        this.name = name;
-        this.anzahl = anzahl;
-        this.tagesMiete = tagesMiete;
-        this.wochenendMiete = wochenendMiete;
-        this.aufbau = aufbau;
-    }
-
-    public int getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(int id) {
-        if (id<0)
-            throw new IllegalArgumentException("ID darf nicht negativ sein");
+    public void setId(Long id) {
         this.id = id;
-    }
-
-    public Kategorie getKategorie() {
-        return kategorie;
-    }
-
-    public void setKategorie(Kategorie kategorie) {
-        this.kategorie = kategorie;
     }
 
     public String getName() {
@@ -62,63 +38,67 @@ public class Material {
     }
 
     public void setName(String name) {
-        if (name == null)
-            throw new NullPointerException("Name darf nicht null sein");
-        if (!(name.isEmpty() || name.isBlank()))
-            this.name = name;
+        this.name = name;
     }
 
-    public double getWochenendMiete() {
-        if (anzahl<=0)
-            throw new IllegalArgumentException("Preis für Wochenende muss größer 0 sein");
-        return wochenendMiete;
+    public int getCount() {
+        return count;
     }
 
-    public void setWochenendMiete(double wochenendPreis) {
-        if (anzahl<=0)
-            throw new IllegalArgumentException("Preis für Tagesmiete muss größer 0 sein");
-        this.wochenendMiete = wochenendPreis;
+    public void setCount(int count) {
+        this.count = count;
     }
 
-    public double getTagesMiete() {
-        return tagesMiete;
+    public List<MaterialPrice> getMaterialPrices() {
+        return materialPrices;
     }
 
-    public void setTagesMiete(double tagesPreis) {
-        this.tagesMiete = tagesPreis;
+    public void setMaterialPrices(List<MaterialPrice> materialPrices) {
+        this.materialPrices = materialPrices;
     }
 
-    public int getAnzahl() {
-        return anzahl;
+    public MaterialCategory getCategory() {
+        return category;
     }
 
-    public void setAnzahl(int anzahl) {
-        if (anzahl<=0)
-            throw new IllegalArgumentException("Anzahl muss größer 0 sein");
-        this.anzahl = anzahl;
+    public void setCategory(MaterialCategory category) {
+        this.category = category;
     }
 
-    public double getAufbau() {
-        return aufbau;
+    @JsonIgnore
+    public boolean isGarnitur() {
+        return this.getCategory().equals(MaterialCategory.Tische_Bänke_Stühle);
     }
 
-    public void setAufbau(double aufbau) {
-        this.aufbau = aufbau;
+    @JsonIgnore
+    public boolean isRegenrinne() {
+        return this.getName().equals("Regenrinne");
     }
 
-    public void checkAttribute(){
-        setAnzahl(getAnzahl());
-        setName(getName());
-        setTagesMiete(getTagesMiete());
-        setWochenendMiete(getWochenendMiete());
+    @JsonIgnore
+    public boolean isZelt() {
+        return this.getCategory().equals(MaterialCategory.Zelte);
+    }
+
+    @JsonIgnore
+    public boolean isZeltboden() {
+        return this.getName().equals("Zeltboden");
+    }
+
+    @JsonIgnore
+    public boolean isHufeisenwerfen() {
+        return this.getName().equals("Hufeisenwerfen");
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (o == null || this.getClass() != o.getClass()) {
-            return false;
-        }
-        return ((Material) o).id == this.id;
+    public String toString() {
+        return "Material{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", count=" + count +
+                ", materialPrices=" + materialPrices +
+                ", category=" + category +
+                '}';
     }
-
 }
+
